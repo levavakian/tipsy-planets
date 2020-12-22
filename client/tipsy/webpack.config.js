@@ -25,7 +25,7 @@ module.exports = {
           {
             loader: 'file-loader',
             options: {
-              outputPath: 'public/js'
+              publicPath: 'public/js'
             }
           }
         ],
