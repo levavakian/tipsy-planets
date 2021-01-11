@@ -13,10 +13,10 @@ COPY client /home/apps/tipsy-planets/client
 COPY server /go/src/tipsy-planets/server
 ENV GO111MODULE=on
 WORKDIR /home/apps/tipsy-planets/client
-# RUN npm install
-# RUN npm run build
+RUN npm install
+RUN npm run build
 WORKDIR /go/src/tipsy-planets/server
-# RUN go get && go install
+RUN go get && go install
 
 USER apps
 WORKDIR /home/apps/tipsy-planets

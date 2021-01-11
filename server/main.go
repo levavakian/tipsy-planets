@@ -337,7 +337,7 @@ func HandleInput(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
 
 func main() {
 	host := "localhost"
-	port := "4000"
+	port := "443"
 
 	rooms := &LockedRooms{Rooms: make(map[string]*Room)}
 
@@ -356,6 +356,7 @@ func main() {
 	http.HandleFunc("/api/board", HandleImage(img))
 	http.HandleFunc("/api/stream", HandleStream(rooms, upgrader))
 	http.HandleFunc("/api/input", HandleInput(rooms))
+	http.Handle("/", http.FileServer(http.Dir("/home/apps/tipsy-planets/client/build")))
 	log.Println("Game server started...")
 	log.Println(http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), nil))
 }
