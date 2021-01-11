@@ -2,4 +2,4 @@ build:
   docker:
     web: Dockerfile
 run:
-  web: ls; $(pwd); server
+  web: echo "step1"; ls; echo "step2"; echo $(pwd); server
