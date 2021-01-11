@@ -8,7 +8,7 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && apt-get update &&
 
 RUN adduser apps
 RUN echo "apps     ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers
-RUN mkdir -p /home/apps/mmr-web && chown apps:apps /home/apps
+RUN mkdir -p /home/apps/tipsy-planets && chown apps:apps /home/apps
 COPY client /home/apps/tipsy-planets/client
 COPY server /go/src/tipsy-planets/server
 ENV GO111MODULE=on
@@ -17,6 +17,7 @@ RUN npm install
 RUN npm run build
 WORKDIR /go/src/tipsy-planets/server
 RUN go get && go install
+RUN chown -R apps:apps /go/
 
 USER apps
 WORKDIR /home/apps/tipsy-planets
