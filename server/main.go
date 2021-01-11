@@ -339,7 +339,7 @@ func HandleInput(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
 }
 
 func main() {
-	host := "localhost"
+	host := "0.0.0.0"
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "443"
