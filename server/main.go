@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"github.com/markbates/pkger"
 	"github.com/gorilla/websocket"
+	"os"
 )
 
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
@@ -24,7 +25,9 @@ func RandStringRunes(n int) string {
 }
 
 func setupHeaders(w *http.ResponseWriter, req *http.Request) bool {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	if port := os.Getenv("PORT"); port != "" && (port != "443") {
+		(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	}
 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
 	(*w).Header().Set("Content-Type", "application/json")
@@ -337,7 +340,10 @@ func HandleInput(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
 
 func main() {
 	host := "localhost"
-	port := "443"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "443"
+	}
 
 	rooms := &LockedRooms{Rooms: make(map[string]*Room)}
 

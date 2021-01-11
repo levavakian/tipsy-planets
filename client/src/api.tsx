@@ -1,8 +1,16 @@
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const serverURL: string = process.env.REACT_APP_TPHOST || "http://localhost:4000"
-const wsURL: string = process.env.REACT_APP_TPWSHOST || "ws://localhost:4000"
+const getServerUrl = () => {
+  return process.env.REACT_APP_TPHOST || window.location.origin.toString()
+}
+
+const getWSUrl = () => {
+  return getServerUrl().replace("http", "ws")
+}
+
+const serverURL: string = getServerUrl();
+const wsURL: string = getWSUrl();
 
 const api = (action: string, route: string, content: any = undefined, onload: any = undefined, isImage: boolean = false) => {
   let xhr = new XMLHttpRequest()
