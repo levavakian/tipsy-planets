@@ -1,9 +1,10 @@
 import { serverURL } from './api'
-import { Room, getPlayerColor } from './Elements'
+import { Room, getPlayerColor, EffectTypes } from './Elements'
 import * as paper from "paper";
 import { Path, Point } from "paper";
 import React, { createRef,RefObject } from 'react';
 import { Player } from './Elements'
+import { toast } from 'react-toastify';
 
 function Playerlist(props: any) {
   return (
@@ -45,6 +46,30 @@ class Canvas extends React.Component<CanvasProps, CanvasState> {
 
     let locations = this.props.room.board.locations
     for (let [idx, loc] of locations.entries()) {
+      for (let effect of loc.effects) {
+        if (effect.type === EffectTypes.WORMHOLE) {
+          let target = locations.find((loc) => loc.name === effect.wormhole_target)
+          if (!target) {
+            toast("Could not find wormhole target " + effect.wormhole_target)
+            continue
+          }
+          let p = new Path.Arc(
+            new Point(loc.x, loc.y),
+            new Point((target.x + loc.x + 20)/2, (target.y + loc.y + 20)/2),
+            new Point(target.x, target.y)
+          )
+          p.strokeColor = new paper.Color("blue")
+        } else if (effect.type === EffectTypes.KNOCKBACK) {
+          let text = new paper.PointText(new Point(loc.x + 5, loc.y - 5))
+          if (effect.knockback_amount < 0) {
+            text.fillColor = new paper.Color("blue")
+          } else {
+            text.fillColor = new paper.Color("red")
+          }
+          text.content = effect.knockback_amount.toString()
+        }
+      }
+
       let c = new Path.Circle(new Point(loc.x, loc.y), 5)
       c.fillColor = new paper.Color("green")
 

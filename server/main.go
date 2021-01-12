@@ -25,7 +25,7 @@ func RandStringRunes(n int) string {
 }
 
 func setupHeaders(w *http.ResponseWriter, req *http.Request) bool {
-	if port := os.Getenv("PORT"); port != "" && (port != "443") {
+	if nocors := os.Getenv("NOCORS"); nocors != "" {
 		(*w).Header().Set("Access-Control-Allow-Origin", "*")
 	}
 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
@@ -342,7 +342,7 @@ func main() {
 	host := "0.0.0.0"
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "443"
+		port = "4000"
 	}
 
 	rooms := &LockedRooms{Rooms: make(map[string]*Room)}

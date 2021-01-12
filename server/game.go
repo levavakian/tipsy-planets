@@ -17,6 +17,11 @@ const (
 )
 
 const (
+	KNOCKBACK = "KNOCKBACK"
+	WORMHOLE = "WORMHOLE"
+)
+
+const (
 	DICE_SIZE = 6
 )
 
@@ -31,8 +36,9 @@ type Player struct {
 }
 
 type LocationEffect struct {
-	IsWormhole bool `json:"is_wormhole"`
-	WormhomeTarget string `json:"wormhole_target"`
+	Type string `json:"type"`
+	WormholeTarget string `json:"wormhole_target"`
+	KnockbackAmount int `json:"knockback_amount"`
 }
 
 type Location struct {
@@ -98,7 +104,7 @@ func (r *Room) PopInputReq() {
 	r.InputReqs = r.InputReqs[1:]
 }
 
-func (r *Room) ClearPendingBattlesForPlayer(name string) {
+func (r *Room) ClearPendingForPlayer(name string) {
 	nInputReqs := []*InputRequest{}
 	for _, req := range r.InputReqs {
 		hasPlayer := func()bool{
@@ -119,15 +125,29 @@ func (r *Room) ClearPendingBattlesForPlayer(name string) {
 	r.InputReqs = nInputReqs
 }
 
+func (r *Room) PendingForPlayer(name string, rtype string) bool {
+	for _, req := range r.InputReqs {
+		if rtype != "" && req.Type != rtype {
+			continue
+		}
+		for _, n := range req.Names {
+			if n == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func defaultGameBoard() GameBoard {
 	locs := []*Location{
 		{"1", 50, 50, []*LocationEffect{}},
-		{"2", 200, 50, []*LocationEffect{{IsWormhole: true, WormhomeTarget: "C"}}},
+		{"2", 200, 50, []*LocationEffect{{Type: WORMHOLE, WormholeTarget: "5"}}},
 		{"3", 450, 50, []*LocationEffect{}},
 		{"4", 450, 200, []*LocationEffect{}},
-		{"5", 200, 200, []*LocationEffect{}},
+		{"5", 200, 200, []*LocationEffect{{Type: WORMHOLE, WormholeTarget: "2"}}},
 		{"6", 50, 200, []*LocationEffect{}},
-		{"7", 50, 450, []*LocationEffect{}},
+		{"7", 50, 450, []*LocationEffect{{Type: KNOCKBACK, KnockbackAmount: 2}}},
 		{"8", 200, 450, []*LocationEffect{}},
 		{"9", 450, 450, []*LocationEffect{}},
 	}
@@ -170,7 +190,7 @@ func (r *Room) DoMove(input *InputRequest) error {
 	}
 		
 	dice := rand.Intn(6) + 1
-	err := r.MovePlayer(input.Received[0].Name, dice, false)
+	err := r.MovePlayer(input.Received[0].Name, dice, []string{}, false)
 	if err != nil {
 		return err
 	}
@@ -189,7 +209,7 @@ func (r *Room) DoVictory(input *InputRequest) error {
 	return nil
 }
 
-func (r *Room)MovePlayer(name string, amount int, forced bool) error {
+func (r *Room)MovePlayer(name string, amount int, prevLocsThisRound []string, forced bool) error {
 	player, _ := r.GetPlayer(name)
 	if player == nil {
 		return errors.New("player not found")
@@ -230,6 +250,15 @@ func (r *Room)MovePlayer(name string, amount int, forced bool) error {
 			})
 		}
 	}
+
+	// If no battles are pending for the player, do location effects
+	if !r.PendingForPlayer(player.Name, BATTLE) {
+		prevLocsThisRound = append(prevLocsThisRound, player.Location)
+		err := r.DoEffects(player, prevLocsThisRound)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -255,7 +284,7 @@ func (r *Room) DoBattle(input *InputRequest) error {
 	rollTwo := input.GetReceivedForName(playerTwo.Name).Value
 
 
-	_, loser, diff := func()(*Player, *Player, int){
+	winner, loser, diff := func()(*Player, *Player, int){
 		if rollOne > rollTwo {
 			return playerOne, playerTwo, rollTwo - rollOne
 		} else {
@@ -274,11 +303,83 @@ func (r *Room) DoBattle(input *InputRequest) error {
 		return nil
 	}
 
-	r.ClearPendingBattlesForPlayer(loser.Name)
-	r.MovePlayer(loser.Name, diff, true)
-	
+	r.ClearPendingForPlayer(loser.Name)
 	r.PopInputReq()
+
+	r.MovePlayer(loser.Name, diff, []string{}, true)
+	if winner.Name == playerOne.Name {
+		// If there's no more battles for playerOne, apply effects
+ 		if !r.PendingForPlayer(winner.Name, BATTLE) {
+			err := r.DoEffects(playerOne, []string{winner.Location})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	
 	return nil
+}
+
+func (r *Room) DoEffects(p *Player, prevLocsThisRound []string) error {
+	location, lidx := r.Board.GetLocation(p.Location)
+	if location == nil {
+		return errors.New(p.Location + " did not exist")
+	}
+
+	haveVisited := func(visitTarget string)bool{
+		for _, n := range prevLocsThisRound {
+			if n == visitTarget {
+				return true
+			}
+		}
+		return false
+	}
+
+	deferred_move_diff := 0
+	for _, effect := range location.Effects {
+		switch effect.Type {
+		case WORMHOLE:
+			if deferred_move_diff != 0 {
+				continue
+			}
+			target, tidx := r.Board.GetLocation(effect.WormholeTarget)
+			if target == nil {
+				return errors.New(effect.WormholeTarget + "did not exist for wormhole")
+			}
+			if haveVisited(effect.WormholeTarget) {
+				continue
+			}
+			diff := tidx - lidx
+			r.History = append(r.History, fmt.Sprintf("%s got sucked into a wormhole!", p.Name))
+			deferred_move_diff = diff
+		case KNOCKBACK:
+			if deferred_move_diff != 0 {
+				continue
+			}
+			tidx := lidx - effect.KnockbackAmount
+			lastIdx := len(r.Board.Locations) - 1
+			if tidx > lastIdx {
+				tidx = lastIdx - (tidx - lastIdx)
+			}
+			if tidx < 0 {
+				tidx = 0
+			}
+			diff := tidx - lidx
+			target := r.Board.Locations[tidx]
+			if haveVisited(target.Name) {
+				continue
+			}
+			r.History = append(r.History, fmt.Sprintf("%s got knocked back %d spaces!", p.Name, effect.KnockbackAmount))
+			deferred_move_diff = diff
+		default:
+			return errors.New("Hit default case in effects switch")
+		}
+	}
+	if deferred_move_diff == 0 {
+		return nil
+	} else {
+		return r.MovePlayer(p.Name, deferred_move_diff, prevLocsThisRound, true)
+	}
 }
 
 func (r *Room) AdvanceRoomState(input *Input) (bool, error) {
@@ -335,6 +436,8 @@ func (r *Room) AdvanceRoomState(input *Input) (bool, error) {
 	case VICTORY:
 		err = r.DoVictory(inputReq)
 		return true, err
+	default:
+		return true, errors.New("Hit default case in input request switch")
 	}
 
 	// Do win conditions here

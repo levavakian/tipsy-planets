@@ -1,0 +1,1 @@
+NOCORS=true server

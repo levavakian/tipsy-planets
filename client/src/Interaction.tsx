@@ -2,7 +2,7 @@ import React, { createRef,RefObject } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { api } from './api'
-import { Room } from './Elements'
+import { Room, InputTypes } from './Elements'
 
 interface InteractionProps {
   room?: Room
@@ -49,9 +49,11 @@ class Interaction extends React.Component<InteractionProps,InteractionState> {
     if (in_inputs_list) {
       let in_received_list = input_req.received.find(elem => elem.name === this.props.name)
       if (!in_received_list) {
-        if (input_req.type === "MOVE" || input_req.type === "VICTORY") {
+        if (input_req.type === InputTypes.MOVE) {
           return <span className="cardanim buttonlist" onClick={this.onStart}>Make your move</span>
-        } else if (input_req.type === "BATTLE") {
+        } else if (input_req.type === InputTypes.VICTORY) {
+          return <span className="cardanim buttonlist" onClick={this.onStart}>You won! Make a new rule</span>
+        } else if (input_req.type === InputTypes.BATTLE) {
           return <span className="cardanim buttonlist" onClick={this.onStart}>Roll for battle!</span>
         }
       }

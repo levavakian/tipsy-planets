@@ -1,5 +1,16 @@
 import * as paper from "paper";
 
+enum EffectTypes {
+  WORMHOLE = "WORMHOLE",
+  KNOCKBACK = "KNOCKBACK",
+}
+
+enum InputTypes {
+  BATTLE = "BATTLE",
+  MOVE = "MOVE",
+  VICTORY = "VICTORY",
+}
+
 class Player {
   name: string;
   location: string;
@@ -10,15 +21,29 @@ class Player {
   }
 }
 
+class LocationEffect {
+  type: string
+  wormhole_target: string
+  knockback_amount: number
+
+  constructor(props: any) {
+    this.type = props.type
+    this.wormhole_target = props.wormhole_target
+    this.knockback_amount = props.knockback_amount
+  }
+}
+
 class Location {
   name: string
   x: number
   y: number
+  effects: LocationEffect[]
 
   constructor(props: any) {
     this.name = props.name
     this.x = props.x
     this.y = props.y
+    this.effects = props.effects
   }
 }
 
@@ -90,4 +115,4 @@ const getPlayerColor = (idx: number) => {
   return color
 }
 
-export { Room, Player, GameBoard, InputRequest, getPlayerColor }
+export { Room, Player, GameBoard, InputRequest, EffectTypes, InputTypes, getPlayerColor }
