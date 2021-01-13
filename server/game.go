@@ -19,6 +19,8 @@ const (
 const (
 	KNOCKBACK = "KNOCKBACK"
 	WORMHOLE = "WORMHOLE"
+	GENERIC = "GENERIC"
+	TURNSKIP = "TURNSKIP"
 )
 
 const (
@@ -39,6 +41,8 @@ type LocationEffect struct {
 	Type string `json:"type"`
 	WormholeTarget string `json:"wormhole_target"`
 	KnockbackAmount int `json:"knockback_amount"`
+	TurnskipAmount int `json:"turnskip_amount"`
+	FlavorText string `json:"flavor_text"`
 }
 
 type Location struct {
@@ -83,6 +87,7 @@ type Room struct {
 	InputReqs []*InputRequest `json:"input_reqs"`
 	History []string `json:"history"`
 	Settings Settings `json:"settings"`
+	TurnSkips map[string]int `json:"turn_skips"`
 }
 
 func newRoom(code string) *Room {
@@ -96,6 +101,7 @@ func newRoom(code string) *Room {
 		Settings: Settings{
 			RequireExactVictory: false,
 		},
+		TurnSkips: map[string]int{},
 	}
 }
 
@@ -141,15 +147,50 @@ func (r *Room) PendingForPlayer(name string, rtype string) bool {
 
 func defaultGameBoard() GameBoard {
 	locs := []*Location{
-		{"1", 50, 50, []*LocationEffect{}},
-		{"2", 200, 50, []*LocationEffect{{Type: WORMHOLE, WormholeTarget: "5"}}},
-		{"3", 450, 50, []*LocationEffect{}},
-		{"4", 450, 200, []*LocationEffect{}},
-		{"5", 200, 200, []*LocationEffect{{Type: WORMHOLE, WormholeTarget: "2"}}},
-		{"6", 50, 200, []*LocationEffect{}},
-		{"7", 50, 450, []*LocationEffect{{Type: KNOCKBACK, KnockbackAmount: 2}}},
-		{"8", 200, 450, []*LocationEffect{}},
-		{"9", 450, 450, []*LocationEffect{}},
+		{"[1]Start", 183, 420, []*LocationEffect{}},
+		{"[2]", 105, 380, []*LocationEffect{}},
+		{"[3]", 103, 299, []*LocationEffect{}},
+		{"[4]", 163, 252, []*LocationEffect{}},
+		{"[5]Spider Hole", 224, 275, []*LocationEffect{{Type: KNOCKBACK, KnockbackAmount: 1, FlavorText: "The spiders scare %s back! They take a drink to settle their nerves."}}},
+		{"[6]", 265, 362, []*LocationEffect{}},
+		{"[7]Asteroids", 341, 392, []*LocationEffect{{Type: GENERIC, FlavorText: "Asteroids knock a drink into %s's mouth!"}}},
+		{"[8]", 393, 456, []*LocationEffect{}},
+		{"[9]", 411, 551, []*LocationEffect{}},
+		{"[10]Wormhole Chi-Alpha", 427, 617, []*LocationEffect{{Type: WORMHOLE, WormholeTarget: "[14]Wormhole Chi-Beta", FlavorText: "The wormhole sucks %s to Wormhole Chi-Beta and a drink into their mouth!"}}},
+		{"[11]", 488, 684, []*LocationEffect{}},
+		{"[12]Spacewhale Harbor", 568, 694, []*LocationEffect{{Type: TURNSKIP, TurnskipAmount: 1, FlavorText: "%s is entranced by space whales, they skip a turn!"}}},
+		{"[13]", 621, 621, []*LocationEffect{}},
+		{"[14]Wormhole Chi-Beta", 561, 543, []*LocationEffect{{Type: WORMHOLE, WormholeTarget: "[10]Wormhole Chi-Alpha", FlavorText: "The wormhole sucks %s to Wormhole Chi-Alpha and two drinks into their mouth!"}}},
+		{"[15]", 503, 486, []*LocationEffect{}},
+		{"[16]", 487, 409, []*LocationEffect{}},
+		{"[17]", 565, 347, []*LocationEffect{}},
+		{"[18]Wormhole Tau-Epsilon", 587, 267, []*LocationEffect{{Type: WORMHOLE, WormholeTarget: "[23]Wormhole Tau-Gamma", FlavorText: "The wormhole sucks %s to Wormhole Tau-Gamma and a drink into their mouth!"}}},
+		{"[19]", 533, 219, []*LocationEffect{}},
+		{"[20]Asteroids", 497, 145, []*LocationEffect{{Type: GENERIC, FlavorText: "Asteroids knock a drink into %s's mouth!"}}},
+		{"[21]", 563, 108, []*LocationEffect{}},
+		{"[22]", 621, 162, []*LocationEffect{}},
+		{"[23]Wormhole Tau-Gamma", 677, 219, []*LocationEffect{{Type: WORMHOLE, WormholeTarget: "[18]Wormhole Tau-Epsilon", FlavorText: "The wormhole sucks %s to Wormhole Tau-Epsilon and a drink into their mouth!"}}},
+		{"[22]", 727, 273, []*LocationEffect{}},
+		{"[23]", 678, 362, []*LocationEffect{}},
+		{"[24]The Spider House", 680, 438, []*LocationEffect{{Type: KNOCKBACK, KnockbackAmount: 2, FlavorText: "The spiders drag %s back! They take two drinks to settle their nerves."}}},
+		{"[25]", 714, 517, []*LocationEffect{}},
+		{"[26]", 789, 538, []*LocationEffect{}},
+		{"[27]", 880, 517, []*LocationEffect{}},
+		{"[28]", 913, 437, []*LocationEffect{}},
+		{"[29]", 851, 393, []*LocationEffect{}},
+		{"[30]Tentomon's Trove", 790, 416, []*LocationEffect{{Type: GENERIC, FlavorText: "A vicious space octopus uses all its tentacles to make %s drink eight times!"}}},
+		{"[29]", 761, 487, []*LocationEffect{}},
+		{"[30]", 775, 573, []*LocationEffect{}},
+		{"[31]Asteroids", 819, 626, []*LocationEffect{{Type: GENERIC, FlavorText: "Asteroids knock a drink into %s's mouth!"}}},
+		{"[32]", 895, 639, []*LocationEffect{}},
+		{"[33]Solar Storm", 964, 598, []*LocationEffect{{Type: KNOCKBACK, KnockbackAmount: 3, FlavorText: "Solar squalls push %s back! The only cure to the radiation poisoning is to take three drinks."}}},
+		{"[34]", 1000, 525, []*LocationEffect{}},
+		{"[35]", 1017, 435, []*LocationEffect{}},
+		{"[36]Solar Sail", 1019, 358, []*LocationEffect{{Type: KNOCKBACK, KnockbackAmount: 2, FlavorText: "Solar winds push %s back! Drink two to refill your sails."}}},
+		{"[37]", 945, 304, []*LocationEffect{}},
+		{"[38]Baby Tentomon", 880, 247, []*LocationEffect{{Type: GENERIC, FlavorText: "The space octopus child! It only has four arms to make %s drink four times"}}},
+		{"[39]", 907, 176, []*LocationEffect{}},
+		{"[40]The Restaurant at the End of the Universe", 1024, 108, []*LocationEffect{{Type: GENERIC, FlavorText: "%s made it! Have a drink and make a new rule."}}},
 	}
 	return GameBoard{
 		Locations: locs,
@@ -350,7 +391,7 @@ func (r *Room) DoEffects(p *Player, prevLocsThisRound []string) error {
 				continue
 			}
 			diff := tidx - lidx
-			r.History = append(r.History, fmt.Sprintf("%s got sucked into a wormhole!", p.Name))
+			r.History = append(r.History, fmt.Sprintf(effect.FlavorText, p.Name))
 			deferred_move_diff = diff
 		case KNOCKBACK:
 			if deferred_move_diff != 0 {
@@ -369,8 +410,13 @@ func (r *Room) DoEffects(p *Player, prevLocsThisRound []string) error {
 			if haveVisited(target.Name) {
 				continue
 			}
-			r.History = append(r.History, fmt.Sprintf("%s got knocked back %d spaces!", p.Name, effect.KnockbackAmount))
+			r.History = append(r.History, fmt.Sprintf(effect.FlavorText, p.Name))
 			deferred_move_diff = diff
+		case TURNSKIP:
+			r.TurnSkips[p.Name] = r.TurnSkips[p.Name] + effect.TurnskipAmount
+			r.History = append(r.History, fmt.Sprintf(effect.FlavorText, p.Name))
+		case GENERIC:
+			r.History = append(r.History, fmt.Sprintf(effect.FlavorText, p.Name))
 		default:
 			return errors.New("Hit default case in effects switch")
 		}
@@ -454,16 +500,24 @@ func (r *Room) AdvanceRoomState(input *Input) (bool, error) {
 
 	// If input reqs is empty push to the next player
 	if len(r.InputReqs) == 0 {
-		p, pidx := r.GetPlayer(r.CurrentPlayer)
-		if (p == nil) {
-			log.Fatalln("Expected", r.CurrentPlayer, "to exist")
+		for {
+			p, pidx := r.GetPlayer(r.CurrentPlayer)
+			if (p == nil) {
+				log.Fatalln("Expected", r.CurrentPlayer, "to exist")
+			}
+			r.CurrentPlayer = r.Players[(pidx + 1) % len(r.Players)].Name
+			if r.TurnSkips[r.CurrentPlayer] > 0 {
+				r.TurnSkips[r.CurrentPlayer] = r.TurnSkips[r.CurrentPlayer] - 1
+				r.History = append(r.History, fmt.Sprintf("Skipped %s's turn", r.CurrentPlayer))
+				continue
+			}
+			r.InputReqs = append(r.InputReqs, &InputRequest{
+				Names: []string{r.CurrentPlayer},
+				Type: MOVE,
+				Received: []*Input{},
+			})
+			break
 		}
-		r.CurrentPlayer = r.Players[(pidx + 1) % len(r.Players)].Name
-		r.InputReqs = append(r.InputReqs, &InputRequest{
-			Names: []string{r.CurrentPlayer},
-			Type: MOVE,
-			Received: []*Input{},
-		})
 	}
 	return true, err
 }

@@ -339,6 +339,7 @@ func HandleInput(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	host := "0.0.0.0"
 	port := os.Getenv("PORT")
 	if port == "" {

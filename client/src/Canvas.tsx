@@ -29,6 +29,7 @@ interface CanvasState {
 class Canvas extends React.Component<CanvasProps, CanvasState> {
   canvasRef: RefObject<HTMLCanvasElement>
   layer: paper.Layer | undefined
+  tool: any
 
   constructor(props: CanvasProps) {
     super(props)

@@ -1,1 +1,1 @@
-NOCORS=true server
+go install && NOCORS=true server

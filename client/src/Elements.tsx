@@ -3,6 +3,8 @@ import * as paper from "paper";
 enum EffectTypes {
   WORMHOLE = "WORMHOLE",
   KNOCKBACK = "KNOCKBACK",
+  GENERIC = "GENERIC",
+	TURNSKIP = "TURNSKIP"
 }
 
 enum InputTypes {
@@ -25,11 +27,15 @@ class LocationEffect {
   type: string
   wormhole_target: string
   knockback_amount: number
+  turnskip_amount: number
+  flavor_text: string
 
   constructor(props: any) {
     this.type = props.type
     this.wormhole_target = props.wormhole_target
     this.knockback_amount = props.knockback_amount
+    this.turnskip_amount = props.turnskip_amount
+    this.flavor_text = props.flavor_text
   }
 }
 
