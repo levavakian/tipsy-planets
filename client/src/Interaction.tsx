@@ -11,6 +11,7 @@ interface InteractionProps {
 }
 
 interface InteractionState {
+  hiddenDie: number
 }
 
 class Interaction extends React.Component<InteractionProps,InteractionState> {
@@ -20,6 +21,7 @@ class Interaction extends React.Component<InteractionProps,InteractionState> {
     super(props)
     this.canvasRef = createRef<HTMLCanvasElement>()
     this.state = {
+      hiddenDie: 0
     }
   }
 
@@ -34,13 +36,13 @@ class Interaction extends React.Component<InteractionProps,InteractionState> {
     })
   }
 
-  render() {
+  makeMove() {
     if (!this.props.room) {
-        return <span>Waiting for room...</span>
+      return <span>Waiting for room...</span>
     }
 
     if (this.props.room.input_reqs.length === 0) {
-        return <span className="cardanim buttonlist" onClick={this.onStart}>Click to start</span>
+      return <span className="cardanim buttonlist" onClick={this.onStart}>Click to start</span>
     }
 
     let input_req = this.props.room.input_reqs[0]
@@ -60,6 +62,21 @@ class Interaction extends React.Component<InteractionProps,InteractionState> {
     }
 
     return <span className="cardanim buttonlist">Waiting for: {input_req.names.filter(e => !input_req.received.find(elem => elem.name === e)).join(", ")}</span>
+  }
+
+  dieRoll = (evt: any) => {
+    this.setState({
+      hiddenDie: 1 + Math.floor(Math.random() * Math.floor(6))
+    })
+  }
+
+  render() {
+    return (
+      <div className="Flexrow">
+        {this.makeMove()}
+        <span onClick={this.dieRoll} className="cardanim buttonlist">Hidden Die: {this.state.hiddenDie}</span>
+      </div>
+    )
   }
 }
 

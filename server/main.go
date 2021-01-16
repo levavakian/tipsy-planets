@@ -338,6 +338,88 @@ func HandleInput(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+func HandlePrompt(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !setupHeaders(&w, r) {
+			return
+		}
+
+		type PromptReq struct {
+			Code string
+			Level string
+			Category string
+		}
+		var req PromptReq
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			WriteError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if req.Code == "" {
+			WriteError(w, "lobby code missing from prompt request", http.StatusBadRequest)
+			return
+		}
+
+		rooms.Lock()
+		room, ok := rooms.Rooms[req.Code]
+		rooms.Unlock()
+
+		if !ok {
+			WriteError(w, "no such lobby", http.StatusBadRequest)
+			return
+		}
+
+		room.Lock()
+		defer room.Unlock()
+
+		cat, ok := room.Prompts[req.Category]
+		if !ok {
+			WriteError(w, "no such category", http.StatusBadRequest)
+		}
+
+		chosen := func()*Prompts {
+			if req.Level == "" {
+				total := 0.0
+				for _, v := range cat.Prompts {
+					total = total + v.Priority
+				}
+				r := rand.Float64() * total
+
+				acc := 0.0
+				var last *Prompts
+				for _, v := range cat.Prompts {
+					last = v
+					acc = acc + v.Priority
+					if r < acc {
+						return v
+					}
+				}
+				return last
+			} else {
+				level, ok := cat.Prompts[req.Level]
+				if !ok {
+					return nil
+				}
+				return level
+			}
+		}()
+		if chosen == nil {
+			WriteError(w, "no such level", http.StatusBadRequest)
+		}
+
+		type PromptResp struct {
+			Prompt string `json:"prompt"`
+		}
+
+		resp := PromptResp{
+			Prompt: chosen.Prompts[rand.Intn(len(chosen.Prompts))],
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(resp)
+	}
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	host := "0.0.0.0"
@@ -363,6 +445,7 @@ func main() {
 	http.HandleFunc("/api/board", HandleImage(img))
 	http.HandleFunc("/api/stream", HandleStream(rooms, upgrader))
 	http.HandleFunc("/api/input", HandleInput(rooms))
+	http.HandleFunc("/api/prompt", HandlePrompt(rooms))
 	http.Handle("/", http.FileServer(http.Dir("/home/apps/tipsy-planets/client/build")))
 	log.Println("Game server starting on", host, port)
 	log.Println(http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), nil))

@@ -13,6 +13,37 @@ enum InputTypes {
   VICTORY = "VICTORY",
 }
 
+class Prompts {
+  max_priority: number;
+  priority: number;
+  priority_change: number;
+  prompts: string[];
+
+  constructor(props: any) {
+    this.max_priority = props.max_priority
+    this.priority = props.priority
+    this.priority_change = props.priority_change
+    this.prompts = props.prompts
+  }
+}
+
+class PromptCategory {
+  max_priority: number;
+  priority: number;
+  priority_change: number;
+  prompts: Map<string, Prompts>;
+
+  constructor(props: any) {
+    this.max_priority = props.max_priority
+    this.priority = props.priority
+    this.priority_change = props.priority_change
+    this.prompts = new Map<string, Prompts>()
+    for (let key in props.prompts) {
+      this.prompts.set(key, new Prompts(props.prompts[key]))
+    }
+  }
+}
+
 class Player {
   name: string;
   location: string;
@@ -98,6 +129,7 @@ class Room {
   last_update: Date;
   input_reqs: InputRequest[]
   history: string[]
+  prompts: Map<string, PromptCategory>
 
   constructor(props: any) {
     this.code = props.code
@@ -112,6 +144,10 @@ class Room {
     for (let req of props.input_reqs) {
       this.input_reqs.push(new InputRequest(req))
     }
+    this.prompts = new Map<string, PromptCategory>()
+    for (let key in props.prompts) {
+      this.prompts.set(key, new PromptCategory(props.prompts[key]))
+    }
   }
 }
 
@@ -121,4 +157,4 @@ const getPlayerColor = (idx: number) => {
   return color
 }
 
-export { Room, Player, GameBoard, InputRequest, EffectTypes, InputTypes, getPlayerColor }
+export { Room, Player, GameBoard, InputRequest, EffectTypes, InputTypes, getPlayerColor, Prompts, PromptCategory }

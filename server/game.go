@@ -27,6 +27,118 @@ const (
 	DICE_SIZE = 6
 )
 
+type Prompts struct {
+	MaxPriority float64 `json:"max_priority"`
+	Priority float64 `json:"priority"`
+	PriorityChange float64 `json:"priority_change"`
+	Prompts []string `json:"prompts"`
+}
+
+type PromptCategory struct {
+	MaxPriority float64 `json:"max_priority"`
+	Priority float64 `json:"priority"`
+	PriorityChange float64 `json:"priority_change"`
+	Prompts map[string]*Prompts `json:"prompts"`
+}
+
+func newPromptsMapping() map[string]*PromptCategory {
+	ret := map[string]*PromptCategory{}
+	ret["Truth"] = &PromptCategory{
+		Prompts: map[string]*Prompts{
+			"Mild": &Prompts{
+				MaxPriority: .7,
+				Priority: .7,
+				PriorityChange: .3,
+				Prompts: []string{
+					"example mild truth prompt 1",
+					"example mild truth prompt 2",
+				},
+			},
+			"Medium": &Prompts{
+				MaxPriority: 1.0,
+				Priority: .3,
+				PriorityChange: .3,
+				Prompts: []string{
+					"example medium truth prompt 1",
+					"example medium truth prompt 2",
+				},
+			},
+			"Spicy": &Prompts{
+				MaxPriority: .7,
+				Priority: .1,
+				PriorityChange: .3,
+				Prompts: []string{
+					"example spicy truth prompt 1",
+					"example spicy truth prompt 2",
+				},
+			},
+		},
+	}
+	ret["Dare"] = &PromptCategory{
+		Prompts: map[string]*Prompts{
+			"Mild": &Prompts{
+				MaxPriority: .7,
+				Priority: .7,
+				PriorityChange: .3,
+				Prompts: []string{
+					"example mild dare prompt 1",
+					"example mild dare prompt 2",
+				},
+			},
+			"Medium": &Prompts{
+				MaxPriority: 1.0,
+				Priority: .3,
+				PriorityChange: .3,
+				Prompts: []string{
+					"example medium dare prompt 1",
+					"example medium dare prompt 2",
+				},
+			},
+			"Spicy": &Prompts{
+				MaxPriority: .7,
+				Priority: .1,
+				PriorityChange: .3,
+				Prompts: []string{
+					"example spicy dare prompt 1",
+					"example spicy dare prompt 2",
+				},
+			},
+		},
+	}
+	ret["Rule"] = &PromptCategory{
+		Prompts: map[string]*Prompts{
+			"Mild": &Prompts{
+				MaxPriority: .7,
+				Priority: .7,
+				PriorityChange: .3,
+				Prompts: []string{
+					"example mild rule prompt 1",
+					"example mild rule prompt 2",
+				},
+			},
+			"Medium": &Prompts{
+				MaxPriority: 1.0,
+				Priority: .3,
+				PriorityChange: .3,
+				Prompts: []string{
+					"example medium rule prompt 1",
+					"example medium rule prompt 2",
+				},
+			},
+			"Spicy": &Prompts{
+				MaxPriority: .7,
+				Priority: .1,
+				PriorityChange: .3,
+				Prompts: []string{
+					"example spicy rule prompt 1",
+					"example spicy rule prompt 2",
+				},
+			},
+		},
+	}
+	return ret
+}
+
 type Settings struct {
 	RequireExactVictory bool `json:"require_exact_victory"`
 }
@@ -88,6 +200,7 @@ type Room struct {
 	History []string `json:"history"`
 	Settings Settings `json:"settings"`
 	TurnSkips map[string]int `json:"turn_skips"`
+	Prompts map[string]*PromptCategory `json:"prompts"`
 }
 
 func newRoom(code string) *Room {
@@ -102,6 +215,7 @@ func newRoom(code string) *Room {
 			RequireExactVictory: false,
 		},
 		TurnSkips: map[string]int{},
+		Prompts: newPromptsMapping(),
 	}
 }
 
