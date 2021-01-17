@@ -107,9 +107,7 @@ class Canvas extends React.Component<CanvasProps, CanvasState> {
 
   onImageLoad = () => {
     let img = document.getElementById('baseimg') as HTMLImageElement | null;
-    let canvas = document.getElementById('canvas') as HTMLCanvasElement | null;
-    if (!img || !canvas) {
-      console.log(img, "or", canvas, "not ready")
+    if (!img || img?.naturalWidth === 0 || img?.naturalHeight === 0 || !this.canvasRef.current) {
       return
     }
     this.setState((prevState) => {
@@ -119,7 +117,7 @@ class Canvas extends React.Component<CanvasProps, CanvasState> {
         loaded: true
       }
     })
-    paper.setup(canvas)
+    paper.setup(this.canvasRef.current)
     this.setupBoard(img)
   }
 
@@ -128,9 +126,6 @@ class Canvas extends React.Component<CanvasProps, CanvasState> {
   }
 
   render = () => {
-    if (!this.state.loaded) {
-      this.onImageLoad()
-    }
     if (this.state.loaded) {
       this.drawBoard()
     }
@@ -138,7 +133,7 @@ class Canvas extends React.Component<CanvasProps, CanvasState> {
       <div>
         <div className="Flexrow">
           <Playerlist room={this.props.room} height={this.state.height} />
-          <canvas ref={this.canvasRef} {...this.props} id="canvas" width={this.state.width} height={this.state.height} />
+          <canvas ref={this.canvasRef} style={{"width": this.state.width, "height": this.state.height}} {...this.props} id="canvas" width={this.state.width} height={this.state.height} />
         </div>
         <img src={serverURL + "/api/board"} onLoad={this.onImageLoad} alt="game board hello" id="baseimg" style={{"display": "none"}} />
       </div>
