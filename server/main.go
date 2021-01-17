@@ -420,6 +420,76 @@ func HandlePrompt(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+func HandlePing(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !setupHeaders(&w, r) {
+			return
+		}
+
+		type PingReq struct {
+			Code string
+			Name string
+		}
+		var req PingReq
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			WriteError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if req.Code == "" {
+			WriteError(w, "lobby code missing from ping request", http.StatusBadRequest)
+			return
+		}
+
+		if req.Name == "" {
+			WriteError(w, "name missing from ping request", http.StatusBadRequest)
+			return
+		}
+
+		rooms.Lock()
+		room, ok := rooms.Rooms[req.Code]
+		rooms.Unlock()
+
+		if !ok {
+			WriteError(w, "no such lobby", http.StatusBadRequest)
+			return
+		}
+
+		room.Lock()
+		defer room.Unlock()
+
+		type Ping struct {
+			Ping string `json:"ping"`
+		}
+
+		if len(room.InputReqs) > 0 {
+			recv := map[string]bool{}
+			for _, input := range room.InputReqs[0].Received {
+				recv[input.Name] = true
+			}
+
+			for _, name := range room.InputReqs[0].Names {
+				if gotten, _ := recv[name]; !gotten {
+					player, _ := room.GetPlayer(name)
+					for ws, _ := range player.Conns {
+						nerr := ws.WriteJSON(Ping{req.Name})
+						if nerr != nil {
+							err = nerr
+						}
+					}
+				}
+			}
+		}
+
+		if err != nil {
+			WriteError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	host := "0.0.0.0"
@@ -446,6 +516,7 @@ func main() {
 	http.HandleFunc("/api/stream", HandleStream(rooms, upgrader))
 	http.HandleFunc("/api/input", HandleInput(rooms))
 	http.HandleFunc("/api/prompt", HandlePrompt(rooms))
+	http.HandleFunc("/api/ping", HandlePing(rooms))
 	http.Handle("/", http.FileServer(http.Dir("/home/apps/tipsy-planets/client/build")))
 	log.Println("Game server starting on", host, port)
 	log.Println(http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), nil))

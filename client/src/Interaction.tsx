@@ -64,6 +64,30 @@ class Interaction extends React.Component<InteractionProps,InteractionState> {
     return <span className="cardanim buttonlist">Waiting for: {input_req.names.filter(e => !input_req.received.find(elem => elem.name === e)).join(", ")}</span>
   }
 
+  doPing = (evt: any) => {
+    api("POST", "ping", {"code": this.props.lobby, "name": this.props.name}, (e: any) => {
+      if (e.target.response?.error) {
+        toast(e.target.response.error)
+      }
+    })
+  }
+
+  makePing() {
+    if (!this.props.room) {
+      return <span>Waiting for room...</span>
+    }
+
+    if (this.props.room.input_reqs.length === 0) {
+      return <span className="cardanim buttonlist">Not waiting for anyone</span>
+    }
+    let input_req = this.props.room.input_reqs[0]
+    let waiting_for = input_req.names.filter(e => !input_req.received.find(elem => elem.name === e)).join(", ")
+    if (!waiting_for || waiting_for === this.props.name) {
+      return <span className="cardanim buttonlist">No one to ping</span>
+    }
+    return <span onClick={this.doPing} className="cardanim buttonlist">Ping: {waiting_for}</span>
+  }
+
   dieRoll = (evt: any) => {
     this.setState({
       hiddenDie: 1 + Math.floor(Math.random() * Math.floor(6))
@@ -75,6 +99,7 @@ class Interaction extends React.Component<InteractionProps,InteractionState> {
       <div className="Flexrow">
         {this.makeMove()}
         <span onClick={this.dieRoll} className="cardanim buttonlist">Hidden Die: {this.state.hiddenDie}</span>
+        {this.makePing()}
       </div>
     )
   }

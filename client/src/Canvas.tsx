@@ -109,6 +109,7 @@ class Canvas extends React.Component<CanvasProps, CanvasState> {
     let img = document.getElementById('baseimg') as HTMLImageElement | null;
     let canvas = document.getElementById('canvas') as HTMLCanvasElement | null;
     if (!img || !canvas) {
+      console.log(img, "or", canvas, "not ready")
       return
     }
     this.setState((prevState) => {
@@ -128,11 +129,11 @@ class Canvas extends React.Component<CanvasProps, CanvasState> {
     }
     return (
       <div>
-        <img src={serverURL + "/api/board"} onLoad={this.onImageLoad} alt="game board hello" id="baseimg" style={{"display": "none"}} />
         <div className="Flexrow">
           <Playerlist room={this.props.room} height={this.state.height} />
           <canvas ref={this.canvasRef} {...this.props} id="canvas" width={this.state.width} height={this.state.height} />
         </div>
+        <img src={serverURL + "/api/board"} onLoad={this.onImageLoad} alt="game board hello" id="baseimg" style={{"display": "none"}} />
       </div>
     )
   }

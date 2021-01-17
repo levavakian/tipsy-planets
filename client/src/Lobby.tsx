@@ -43,7 +43,12 @@ class Lobby extends React.Component<LobbyProps, LobbyState> {
     let socket = new WebSocket(wsURL + `/api/stream?name=${this.props.name}&code=${this.props.lobby}`)
     socket.onmessage = (ev: MessageEvent<any>) => {
       this.last_ws_update = new Date()
-      if ('heartbeat' in JSON.parse(ev.data)) {
+      let parsed = JSON.parse(ev.data)
+      if ('heartbeat' in parsed) {
+        return
+      }
+      if ('ping' in parsed) {
+        toast(parsed.ping + " asks that you hurry up")
         return
       }
       this.loadFromServer()

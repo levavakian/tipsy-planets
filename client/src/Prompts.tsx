@@ -36,11 +36,11 @@ class Prompts extends React.Component<PromptsProps,PromptsState> {
   promptCategory = (key: string, props: PromptCategory) => {
     let levelJSX = Array.from(props.prompts).map((val) => {
       let lkey = val[0]
-      return <div onClick={(evt: any) => {this.requestPrompt(key, lkey)}} className="cardanim buttonlist" key={lkey}>{lkey}</div>
+      return <div onClick={(evt: any) => {this.requestPrompt(key, lkey)}} className="cardanim buttonlist" key={key + lkey}>{lkey}</div>
     })
     return (
-      <div>
-        <div onClick={(evt: any) => {this.requestPrompt(key, "")}} className="cardanim buttonlist">{key}</div>
+      <div key={key}>
+        <div key={key} onClick={(evt: any) => {this.requestPrompt(key, "")}} className="cardanim buttonlist">{key}</div>
         {levelJSX}
       </div>
     )
