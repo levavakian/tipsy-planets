@@ -123,7 +123,14 @@ class Canvas extends React.Component<CanvasProps, CanvasState> {
     this.setupBoard(img)
   }
 
+  componentDidMount() {
+    this.onImageLoad()
+  }
+
   render = () => {
+    if (!this.state.loaded) {
+      this.onImageLoad()
+    }
     if (this.state.loaded) {
       this.drawBoard()
     }
