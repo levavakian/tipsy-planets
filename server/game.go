@@ -8,6 +8,7 @@ import (
 	"log"
 	"github.com/gorilla/websocket"
 	"errors"
+	"github.com/google/uuid"
 )
 
 const (
@@ -21,6 +22,14 @@ const (
 	WORMHOLE = "WORMHOLE"
 	GENERIC = "GENERIC"
 	TURNSKIP = "TURNSKIP"
+)
+
+const (
+	EXTERNAL = "EXTERNAL"
+	BUILTIN = "BUILTIN"
+	ONBATTLELOSE = "ONBATTLELOSE"
+	ONBATTLEWIN = "ONBATTLEWIN"
+	ONBATTLE = "ONBATTLE"
 )
 
 const (
@@ -150,11 +159,13 @@ type Player struct {
 }
 
 type LocationEffect struct {
+	Id string `json:"id"`
 	Type string `json:"type"`
 	WormholeTarget string `json:"wormhole_target"`
 	KnockbackAmount int `json:"knockback_amount"`
 	TurnskipAmount int `json:"turnskip_amount"`
 	FlavorText string `json:"flavor_text"`
+	Trigger string `json:"trigger"`
 }
 
 type Location struct {
@@ -166,6 +177,56 @@ type Location struct {
 
 type GameBoard struct {
 	Locations []*Location `json:"locations"`
+	Effects []*LocationEffect `json:"effects"`
+}
+
+func (g *GameBoard) AddEffect(etype string, trigger string, locations []string, flavorText string, knockbackAmount int, wormholeTarget string, turnskipAmount int) {
+	eff := &LocationEffect{
+		Type: etype,
+		FlavorText: flavorText,
+		KnockbackAmount: knockbackAmount,
+		WormholeTarget: wormholeTarget,
+		TurnskipAmount: turnskipAmount,
+		Trigger: trigger,
+		Id: uuid.New().String(),
+	}
+	if len(locations) == 0 {
+		g.Effects = append(g.Effects, eff)
+	} else {
+		for _, loc := range(g.Locations) {
+			add := func()bool {
+				for _, target := range locations {
+					if target == loc.Name {
+						return true
+					}
+				}
+				return false
+			}()
+			if add {
+				loc.Effects = append(loc.Effects, eff)
+			}
+		}
+	}
+}
+
+func (g *GameBoard) RemoveEffect(id string) {
+	nGlobalEffects := []*LocationEffect{}
+	for _, eff := range g.Effects {
+		if eff.Id != id {
+			nGlobalEffects = append(nGlobalEffects, eff)
+		}
+	}
+	g.Effects = nGlobalEffects
+
+	for _, loc := range g.Locations {
+		nLocEffects := []*LocationEffect{}
+		for _, eff := range loc.Effects {
+			if eff.Id != id {
+				nLocEffects = append(nLocEffects, eff)
+			}
+		}
+		loc.Effects = nLocEffects
+	}
 }
 
 type Input struct {
@@ -306,7 +367,14 @@ func defaultGameBoard() GameBoard {
 		{"[43]", 907, 176, []*LocationEffect{}},
 		{"[44]The Restaurant at the End of the Universe", 1024, 108, []*LocationEffect{{Type: GENERIC, FlavorText: "%s made it! Have a drink and make a new rule."}}},
 	}
+	for _, loc := range locs {
+		for _, eff := range loc.Effects {
+			eff.Id = uuid.New().String()
+			eff.Trigger = BUILTIN
+		}
+	}
 	return GameBoard{
+		Effects: []*LocationEffect{},
 		Locations: locs,
 	}
 }
@@ -409,7 +477,8 @@ func (r *Room)MovePlayer(name string, amount int, prevLocsThisRound []string, fo
 	// If no battles are pending for the player, do location effects
 	if !r.PendingForPlayer(player.Name, BATTLE) {
 		prevLocsThisRound = append(prevLocsThisRound, player.Location)
-		err := r.DoEffects(player, prevLocsThisRound)
+		err := r.DoEffects(player, EXTERNAL, prevLocsThisRound, false)
+		err = r.DoEffects(player, BUILTIN, prevLocsThisRound, false)
 		if err != nil {
 			return err
 		}
@@ -447,6 +516,15 @@ func (r *Room) DoBattle(input *InputRequest) error {
 		}
 	}()
 
+	err := r.DoEffects(playerOne, ONBATTLE, []string{winner.Location}, true)
+	if err != nil {
+		return err
+	}
+	err = r.DoEffects(playerTwo, ONBATTLE, []string{winner.Location}, true)
+	if err != nil {
+		return err
+	}
+
 	if diff == 0 {
 		r.History = append(r.History, "Battle was a tie!")
 		r.PopInputReq()
@@ -456,6 +534,15 @@ func (r *Room) DoBattle(input *InputRequest) error {
 			Received: []*Input{},
 		}}, r.InputReqs...)
 		return nil
+	} else {
+		err = r.DoEffects(winner, ONBATTLEWIN, []string{winner.Location}, true)
+		if err != nil {
+			return err
+		}
+		err = r.DoEffects(loser, ONBATTLELOSE, []string{winner.Location}, true)
+		if err != nil {
+			return err
+		}
 	}
 
 	r.ClearPendingForPlayer(loser.Name)
@@ -465,7 +552,8 @@ func (r *Room) DoBattle(input *InputRequest) error {
 	if winner.Name == playerOne.Name {
 		// If there's no more battles for playerOne, apply effects
  		if !r.PendingForPlayer(winner.Name, BATTLE) {
-			err := r.DoEffects(playerOne, []string{winner.Location})
+			err = r.DoEffects(playerOne, EXTERNAL, []string{winner.Location}, false)
+			err = r.DoEffects(playerOne, BUILTIN, []string{winner.Location}, false)
 			if err != nil {
 				return err
 			}
@@ -475,7 +563,7 @@ func (r *Room) DoBattle(input *InputRequest) error {
 	return nil
 }
 
-func (r *Room) DoEffects(p *Player, prevLocsThisRound []string) error {
+func (r *Room) DoEffects(p *Player, triggerType string, prevLocsThisRound []string, generic bool) error {
 	location, lidx := r.Board.GetLocation(p.Location)
 	if location == nil {
 		return errors.New(p.Location + " did not exist")
@@ -491,7 +579,15 @@ func (r *Room) DoEffects(p *Player, prevLocsThisRound []string) error {
 	}
 
 	deferred_move_diff := 0
-	for _, effect := range location.Effects {
+
+	targetList := location.Effects
+	if generic {
+		targetList = append(targetList, r.Board.Effects...)
+	}
+	for _, effect := range targetList {
+		if effect.Trigger != triggerType {
+			continue
+		}
 		switch effect.Type {
 		case WORMHOLE:
 			if deferred_move_diff != 0 {

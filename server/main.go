@@ -490,6 +490,60 @@ func HandlePing(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+func HandleRule(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !setupHeaders(&w, r) {
+			return
+		}
+
+		type RuleReq struct {
+			Code string
+			Name string
+			Id string
+			Delete bool
+			Locations []string
+			FlavorText string `json:"flavor_text"`
+			Type string
+			Trigger string
+			KnockbackAmount int
+			WormholeTarget string
+			TurnskipAmount int
+		}
+		var req RuleReq
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			WriteError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if req.Code == "" {
+			WriteError(w, "lobby code missing from prompt request", http.StatusBadRequest)
+			return
+		}
+
+		rooms.Lock()
+		room, ok := rooms.Rooms[req.Code]
+		rooms.Unlock()
+
+		if !ok {
+			WriteError(w, "no such lobby", http.StatusBadRequest)
+			return
+		}
+
+		room.Lock()
+		defer room.Unlock()
+
+		if req.Delete {
+			room.Board.RemoveEffect(req.Id)
+		} else {
+			room.Board.AddEffect(req.Type, req.Trigger, req.Locations, req.FlavorText,
+							     req.KnockbackAmount, req.WormholeTarget, req.TurnskipAmount)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		room.NotifyPlayers()
+	}
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	host := "0.0.0.0"
@@ -517,6 +571,7 @@ func main() {
 	http.HandleFunc("/api/input", HandleInput(rooms))
 	http.HandleFunc("/api/prompt", HandlePrompt(rooms))
 	http.HandleFunc("/api/ping", HandlePing(rooms))
+	http.HandleFunc("/api/rule", HandleRule(rooms))
 	http.Handle("/", http.FileServer(http.Dir("/home/apps/tipsy-planets/client/build")))
 	log.Println("Game server starting on", host, port)
 	log.Println(http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), nil))

@@ -54,6 +54,7 @@
   padding: 10px;
   border: 2px solid #337733;
   border-radius: 10px;
+  user-select: none;
 }
 
 .cardanim {

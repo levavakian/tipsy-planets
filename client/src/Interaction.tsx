@@ -1,4 +1,4 @@
-import React, { createRef,RefObject } from 'react';
+import React from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { api } from './api'
@@ -15,11 +15,8 @@ interface InteractionState {
 }
 
 class Interaction extends React.Component<InteractionProps,InteractionState> {
-  canvasRef: RefObject<HTMLCanvasElement>
-
   constructor(props: InteractionProps) {
     super(props)
-    this.canvasRef = createRef<HTMLCanvasElement>()
     this.state = {
       hiddenDie: 0
     }
@@ -96,10 +93,12 @@ class Interaction extends React.Component<InteractionProps,InteractionState> {
 
   render() {
     return (
-      <div className="Flexrow">
-        {this.makeMove()}
-        <span onClick={this.dieRoll} className="cardanim buttonlist">Hidden Die: {this.state.hiddenDie}</span>
-        {this.makePing()}
+      <div className="Flexcolumn">
+        <div className="Flexrow">
+          {this.makeMove()}
+          <span onClick={this.dieRoll} className="cardanim buttonlist">Hidden Die: {this.state.hiddenDie}</span>
+          {this.makePing()}
+        </div>
       </div>
     )
   }

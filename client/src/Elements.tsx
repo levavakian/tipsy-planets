@@ -4,7 +4,15 @@ enum EffectTypes {
   WORMHOLE = "WORMHOLE",
   KNOCKBACK = "KNOCKBACK",
   GENERIC = "GENERIC",
-	TURNSKIP = "TURNSKIP"
+  TURNSKIP = "TURNSKIP",
+}
+
+enum TriggerTypes {
+  EXTERNAL = "EXTERNAL",
+  ONBATTLELOSE = "ONBATTLELOSE",
+	ONBATTLEWIN = "ONBATTLEWIN",
+  ONBATTLE = "ONBATTLE",
+  BUILTIN = "BUILTIN",
 }
 
 enum InputTypes {
@@ -55,18 +63,22 @@ class Player {
 }
 
 class LocationEffect {
+  id: string
   type: string
   wormhole_target: string
   knockback_amount: number
   turnskip_amount: number
   flavor_text: string
+  trigger: string
 
   constructor(props: any) {
+    this.id = props.id
     this.type = props.type
     this.wormhole_target = props.wormhole_target
     this.knockback_amount = props.knockback_amount
     this.turnskip_amount = props.turnskip_amount
     this.flavor_text = props.flavor_text
+    this.trigger = props.trigger
   }
 }
 
@@ -80,17 +92,25 @@ class Location {
     this.name = props.name
     this.x = props.x
     this.y = props.y
-    this.effects = props.effects
+    this.effects = []
+    for (let effprop of props.effects) {
+      this.effects.push(new LocationEffect(effprop))
+    }
   }
 }
 
 class GameBoard {
   locations: Location[];
+  effects: LocationEffect[]
 
   constructor(props: any) {
     this.locations = []
     for (let locjson of props.locations) {
       this.locations.push(new Location(locjson))
+    }
+    this.effects = []
+    for (let effprop of props.effects) {
+      this.effects.push(new LocationEffect(effprop))
     }
   }
 }
@@ -157,4 +177,4 @@ const getPlayerColor = (idx: number) => {
   return color
 }
 
-export { Room, Player, GameBoard, InputRequest, EffectTypes, InputTypes, getPlayerColor, Prompts, PromptCategory }
+export { Room, Player, GameBoard, InputRequest, Location, LocationEffect, TriggerTypes, EffectTypes, InputTypes, getPlayerColor, Prompts, PromptCategory }
