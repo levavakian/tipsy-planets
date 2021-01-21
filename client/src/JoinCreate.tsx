@@ -10,6 +10,7 @@ interface JoinCreateProps {
 interface JoinCreateState {
   name: string
   join: string
+  do_join: boolean
 }
   
 class JoinCreate extends React.Component<JoinCreateProps, JoinCreateState> {
@@ -17,7 +18,8 @@ class JoinCreate extends React.Component<JoinCreateProps, JoinCreateState> {
     super(props)
     this.state = {
       name: "",
-      join: ""
+      join: "",
+      do_join: false
   }
 }
 
@@ -62,9 +64,6 @@ onCreate = (event: any) => {
 }
 
 onJoin = (event: any) => {
-  if (event.which !== 13) {
-    return
-  }
   event.preventDefault();
   if (!this.state.name) {
     toast("Set your name before joining lobby")
@@ -85,31 +84,48 @@ onJoin = (event: any) => {
   })
 }
 
-boop = (event: any) => {
-  if (event.which === 13) {
-    event.preventDefault();
-    toast(event.target.value)
+onDoJoin = (ev: any) => {
+  if (!this.state.name) {
+    toast("Set your name before joining lobby")
+    return
+  } else {
+    this.setState({
+      do_join: true
+    })
+  }
+}
+
+inner = () => {
+  if (this.state.do_join) {
+    return (
+      <div className="Flexcolumn">
+        <input value={this.state.join} onChange={this.onJoinChange} placeholder="room code"></input>
+        <span onClick={this.onJoin} className="cardanim buttonlist">Join</span>
+        <span onClick={(ev: any) => {this.setState({do_join: false})}} className="cardanim buttonlist">Back</span>
+      </div>
+    )
+  } else {
+    return (
+      <div>
+          <div className="Flexrow">
+            <span className="cardanim buttonlist">Name</span>
+            <input value={this.state.name} onChange={this.onNameChange} placeholder="your name"></input>
+          </div>
+          <div onClick={this.onCreate} className="cardanim buttonlist">Create</div>
+          <div onClick={this.onDoJoin} className="cardanim buttonlist">Join</div>
+      </div>
+    )
   }
 }
 
 render() {
+  
   return (
     <div className="App">
       <ToastContainer />
       <header className="App-header">
         <div>Tipsy Planets</div>
-        <div>
-          <div className="Flexrow">
-            <span className="cardanim buttonlist">Name</span>
-            <input value={this.state.name} onChange={this.onNameChange} onKeyPress={this.boop} placeholder="your name"></input>
-          </div>
-          
-          <div className="Flexrow">
-            <span className="cardanim buttonlist">Join</span>
-            <input value={this.state.join} onChange={this.onJoinChange} onKeyPress={this.onJoin} placeholder="room code"></input>
-          </div>
-          <div onClick={this.onCreate} className="cardanim buttonlist">Create</div>
-        </div>
+        {this.inner()}
       </header>
     </div>
   )

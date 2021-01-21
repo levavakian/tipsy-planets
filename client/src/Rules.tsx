@@ -150,6 +150,7 @@ class Rules extends React.Component<RulesProps,RulesState> {
       "locations": this.state.locations,
       "code": this.props.room.code,
       "flavor_text": ftext,
+      "name": this.props.name,
     }
     api("POST", "rule", content, (e: any) => {
       if (e.target.status !== 200) {

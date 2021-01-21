@@ -533,10 +533,10 @@ func HandleRule(rooms *LockedRooms) func(http.ResponseWriter, *http.Request) {
 		defer room.Unlock()
 
 		if req.Delete {
-			room.Board.RemoveEffect(req.Id)
+			room.RemoveEffect(req.Id)
 		} else {
-			room.Board.AddEffect(req.Type, req.Trigger, req.Locations, req.FlavorText,
-							     req.KnockbackAmount, req.WormholeTarget, req.TurnskipAmount)
+			room.AddEffect(req.Name, req.Type, req.Trigger, req.Locations, req.FlavorText,
+		        			req.KnockbackAmount, req.WormholeTarget, req.TurnskipAmount)
 		}
 
 		w.WriteHeader(http.StatusOK)

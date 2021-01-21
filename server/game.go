@@ -180,7 +180,8 @@ type GameBoard struct {
 	Effects []*LocationEffect `json:"effects"`
 }
 
-func (g *GameBoard) AddEffect(etype string, trigger string, locations []string, flavorText string, knockbackAmount int, wormholeTarget string, turnskipAmount int) {
+func (r *Room) AddEffect(name string, etype string, trigger string, locations []string, flavorText string, knockbackAmount int, wormholeTarget string, turnskipAmount int) {
+	g := r.Board
 	eff := &LocationEffect{
 		Type: etype,
 		FlavorText: flavorText,
@@ -207,9 +208,40 @@ func (g *GameBoard) AddEffect(etype string, trigger string, locations []string, 
 			}
 		}
 	}
+
+	// Lets check for the victory condition
+	if (len(r.InputReqs) <= 0) {
+		return
+	}
+	ireq := r.InputReqs[0]
+	if ireq.Type != VICTORY {
+		return
+	}
+	if (len(ireq.Names) <= 0) {
+		return
+	}
+	if (ireq.Names[0] != name) {
+		return
+	}
+	// Eyy, somebody won clear the board and update the spiciness ratios
+	r.PopInputReq()
+
+	for _, cat := range r.Prompts {
+		cat.Priority = cat.Priority + (cat.MaxPriority - cat.Priority) * cat.PriorityChange
+		if cat.Priority > cat.MaxPriority {
+			cat.Priority = cat.MaxPriority
+		}
+		for _, prompts := range cat.Prompts {
+			prompts.Priority = prompts.Priority + (prompts.MaxPriority - prompts.Priority) * prompts.PriorityChange
+			if prompts.Priority > prompts.MaxPriority {
+				prompts.Priority = prompts.MaxPriority
+			}
+		}
+	}
 }
 
-func (g *GameBoard) RemoveEffect(id string) {
+func (r *Room) RemoveEffect(id string) {
+	g := r.Board
 	nGlobalEffects := []*LocationEffect{}
 	for _, eff := range g.Effects {
 		if eff.Id != id {
@@ -255,7 +287,7 @@ type Room struct {
 	Code string `json:"code"`
 	Players []*Player `json:"players"`
 	CurrentPlayer string `json:"current_player"`
-	Board GameBoard `json:"board"`
+	Board *GameBoard `json:"board"`
 	LastUpdate time.Time `json:"last_update"`
 	InputReqs []*InputRequest `json:"input_reqs"`
 	History []string `json:"history"`
@@ -320,7 +352,7 @@ func (r *Room) PendingForPlayer(name string, rtype string) bool {
 	return false
 }
 
-func defaultGameBoard() GameBoard {
+func defaultGameBoard() *GameBoard {
 	locs := []*Location{
 		{"[1]Start", 183, 420, []*LocationEffect{}},
 		{"[2]", 105, 380, []*LocationEffect{}},
@@ -373,7 +405,7 @@ func defaultGameBoard() GameBoard {
 			eff.Trigger = BUILTIN
 		}
 	}
-	return GameBoard{
+	return &GameBoard{
 		Effects: []*LocationEffect{},
 		Locations: locs,
 	}
@@ -423,12 +455,8 @@ func (r *Room) DoMove(input *InputRequest) error {
 }
 
 func (r *Room) DoVictory(input *InputRequest) error {
-	// Return if we don't have all the inputs we're waiting for
-	if len(input.Received) != len(input.Names) {
-		return nil
-	}
-
-	r.PopInputReq()
+	// We wait for a new rule so do nothing except clear the received
+	input.Received = []*Input{}
 	return nil
 }
 
